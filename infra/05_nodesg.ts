@@ -14,23 +14,44 @@ export function createNodeSecurityGroup(
         protocol: "-1",
         fromPort: 0,
         toPort: 0,
-        cidrBlocks: ["0.0.0.0/0"], // outbound everywhere
+        cidrBlocks: ["0.0.0.0/0"],
       },
     ],
     ingress: [
-      // Allow node-to-node communication
+      // Node-to-node communication
       {
         protocol: "-1",
         fromPort: 0,
         toPort: 0,
         self: true,
       },
-      // Allow cluster - nodes communication
+      // Control plane -> kubelet
       {
-        protocol: "-1",
-        fromPort: 0,
-        toPort: 0,
+        protocol: "tcp",
+        fromPort: 10250,
+        toPort: 10250,
         securityGroups: [clusterSgId],
+      },
+      // Control plane -> nodes (API server -> kube-proxy / overlay networking)
+      {
+        protocol: "tcp",
+        fromPort: 443,
+        toPort: 443,
+        securityGroups: [clusterSgId],
+      },
+      // Allow NodePort range for LoadBalancer services
+      {
+        protocol: "tcp",
+        fromPort: 30000,
+        toPort: 32767,
+        cidrBlocks: ["0.0.0.0/0"],
+      },
+      // SSH access to worker nodes
+      {
+        protocol: "tcp",
+        fromPort: 22,
+        toPort: 22,
+        cidrBlocks: ["0.0.0.0/0"],
       },
     ],
     tags: buildTags("tms-eks-node-sg"),

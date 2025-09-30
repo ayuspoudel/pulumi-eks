@@ -15,6 +15,16 @@ export function createManagedNodeGroups(args: MngArgs) {
   const baseLaunchTemplate = new aws.ec2.LaunchTemplate("tms-eks-base-lt", {
     namePrefix: "tms-eks-base-lt-",
     vpcSecurityGroupIds: [nodeSgId],
+    blockDeviceMappings: [
+      {
+        deviceName: "/dev/xvda",
+        ebs: {
+          volumeSize: 20,
+          volumeType: "gp3",
+          deleteOnTermination: "true",
+        },
+      },
+    ],
     tagSpecifications: [
       {
         resourceType: "instance",
@@ -30,7 +40,6 @@ export function createManagedNodeGroups(args: MngArgs) {
     scalingConfig: { desiredSize: 2, minSize: 2, maxSize: 4 },
     instanceTypes: ["t3.medium"],
     amiType: "AL2_x86_64",
-    diskSize: 20,
     capacityType: "ON_DEMAND",
     labels: {
       "node.lifecycle": "on-demand",
@@ -53,6 +62,15 @@ export function createManagedNodeGroups(args: MngArgs) {
   const spotLaunchTemplate = new aws.ec2.LaunchTemplate("tms-eks-spot-lt", {
     namePrefix: "tms-eks-spot-lt-",
     vpcSecurityGroupIds: [nodeSgId],
+    blockDeviceMappings: [
+      {
+        deviceName: "/dev/xvda",
+        ebs: {
+          volumeSize: 20,
+          volumeType: "gp3",
+        },
+      },
+    ],
     tagSpecifications: [
       {
         resourceType: "instance",
@@ -68,7 +86,6 @@ export function createManagedNodeGroups(args: MngArgs) {
     scalingConfig: { desiredSize: 0, minSize: 0, maxSize: 10 },
     instanceTypes: ["t3.large", "m5.large", "c5.large"],
     amiType: "AL2_x86_64",
-    diskSize: 20,
     capacityType: "SPOT",
     labels: {
       "node.lifecycle": "spot",

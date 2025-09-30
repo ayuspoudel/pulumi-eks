@@ -1,8 +1,9 @@
-import * as pulumi from "@pulumi/pulumi";
+// index.ts
 import { createVpc } from "./infra/01_vpc";
 import { createIamRoles } from "./infra/02_iam";
 import { createClusterSecurityGroup } from "./infra/03_clustersg";
 import { createEksCluster } from "./infra/04_eks";
+import { createNodeSecurityGroup } from "./infra/05_nodesg";
 import { createManagedNodeGroups } from "./infra/06_mng";
 
 // VPC
@@ -11,10 +12,11 @@ const vpc = createVpc();
 // IAM Roles
 const roles = createIamRoles();
 
-// Security Group for cluster
+// Security Groups
 const clusterSg = createClusterSecurityGroup(vpc.vpcId);
+const nodeSg = createNodeSecurityGroup(vpc.vpcId, clusterSg.id);
 
-// EKS Cluster
+// EKS Cluster (control plane)
 const eksCluster = createEksCluster({
   vpcId: vpc.vpcId,
   privateSubnets: vpc.privateSubnets,
@@ -22,12 +24,12 @@ const eksCluster = createEksCluster({
   clusterSgId: clusterSg.id,
 });
 
-// Managed Node Groups (on-demand + spot)
+// Managed Node Groups (on-demand + spot), attached to node SG via Launch Templates
 const nodeGroups = createManagedNodeGroups({
   clusterName: eksCluster.cluster.name,
   nodeRoleArn: roles.nodeRole.arn,
   privateSubnets: vpc.privateSubnets,
-  nodeSgId: clusterSg.id,
+  nodeSgId: nodeSg.id,
 });
 
 // Exports
@@ -38,9 +40,12 @@ export const privateSubnets = vpc.privateSubnets;
 export const clusterRoleArn = roles.clusterRole.arn;
 export const nodeRoleArn = roles.nodeRole.arn;
 
+export const clusterSgId = clusterSg.id;
+export const nodeSgId = nodeSg.id;
+
 export const clusterName = eksCluster.cluster.name;
 export const clusterEndpoint = eksCluster.cluster.endpoint;
 export const kubeconfig = eksCluster.kubeconfig;
 
-export const baseNodeGroup = nodeGroups.baseNodeGroup.id;
-export const spotNodeGroup = nodeGroups.spotNodeGroup.id;
+export const baseNodeGroupName = nodeGroups.baseNodeGroup.nodeGroupName;
+export const spotNodeGroupName = nodeGroups.spotNodeGroup.nodeGroupName;
