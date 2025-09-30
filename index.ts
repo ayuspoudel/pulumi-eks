@@ -1,9 +1,13 @@
 import * as pulumi from "@pulumi/pulumi";
-import * as aws from "@pulumi/aws";
-import * as awsx from "@pulumi/awsx";
+import { createVpc } from "./infra/01_vpc";
+import { createIamRoles } from "./infra/02_iam";
 
-// Create an AWS resource (S3 Bucket)
-const bucket = new aws.s3.Bucket("my-bucket");
-
-// Export the name of the bucket
-export const bucketName = bucket.id;
+// Call the VPC module
+const vpc = createVpc();
+const roles = createIamRoles();
+// Export useful values for later (and visibility in Pulumi UI)
+export const vpcId = vpc.vpcId;
+export const publicSubnets = vpc.publicSubnets;
+export const privateSubnets = vpc.privateSubnets;
+export const clusterRoleArn = roles.clusterRole.arn;
+export const nodeRoleArn = roles.nodeRole.arn;

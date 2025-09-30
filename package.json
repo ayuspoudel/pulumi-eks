@@ -6,8 +6,26 @@
         "typescript": "^5.0.0"
     },
     "dependencies": {
-        "@pulumi/aws": "^7.0.0",
+        "@pulumi/aws": "^7.7.0",
         "@pulumi/awsx": "^3.0.0",
-        "@pulumi/pulumi": "^3.113.0"
-    }
+        "@pulumi/eks": "^4.0.1",
+        "@pulumi/pulumi": "^3.198.0"
+    },
+    "version": "1.0.0",
+    "description": "A minimal Pulumi template for provisioning AWS infrastructure using TypeScript. This template creates an Amazon S3 bucket and exports its name.",
+    "scripts": {
+        "test": "echo \"Error: no test specified\" && exit 1"
+    },
+    "repository": {
+        "type": "git",
+        "url": "git+https://github.com/ayuspoudel/pulumi-eks.git"
+    },
+    "keywords": [],
+    "author": "",
+    "license": "ISC",
+    "type": "commonjs",
+    "bugs": {
+        "url": "https://github.com/ayuspoudel/pulumi-eks/issues"
+    },
+    "homepage": "https://github.com/ayuspoudel/pulumi-eks#readme"
 }
