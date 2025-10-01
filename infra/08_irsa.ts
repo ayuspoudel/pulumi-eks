@@ -4,25 +4,27 @@ import { buildTags } from "../utils/buildTags";
 
 interface IrsaArgs {
   clusterName: pulumi.Input<string>;
-  oidcProviderArn: pulumi.Input<string>;
-  oidcProviderUrl: pulumi.Input<string>;
+  oidcProviderArn: pulumi.Input<string>; // e.g. arn:aws:iam::<acct>:oidc-provider/...
+  oidcProviderUrl: pulumi.Input<string>; // e.g. https://oidc.eks.us-east-1.amazonaws.com/id/<...>
 }
 
 export function createIrsaRoles(args: IrsaArgs) {
   const { clusterName, oidcProviderArn, oidcProviderUrl } = args;
 
   const assumeRolePolicy = (sa: string, ns: string) =>
-    pulumi.all([oidcProviderUrl]).apply(([url]) =>
+    pulumi.all([oidcProviderArn, oidcProviderUrl]).apply(([arn, url]) =>
       JSON.stringify({
         Version: "2012-10-17",
         Statement: [
           {
             Effect: "Allow",
-            Principal: { Federated: oidcProviderArn },
+            Principal: { Federated: arn },
             Action: "sts:AssumeRoleWithWebIdentity",
             Condition: {
               StringEquals: {
+                // remove https://
                 [`${url.replace("https://", "")}:sub`]: `system:serviceaccount:${ns}:${sa}`,
+                [`${url.replace("https://", "")}:aud`]: "sts.amazonaws.com",
               },
             },
           },
@@ -30,6 +32,7 @@ export function createIrsaRoles(args: IrsaArgs) {
       })
     );
 
+  // Cluster Autoscaler role
   const autoscalerRole = new aws.iam.Role("irsa-cluster-autoscaler", {
     assumeRolePolicy: assumeRolePolicy("cluster-autoscaler", "kube-system"),
     tags: buildTags("irsa-cluster-autoscaler"),
@@ -40,6 +43,7 @@ export function createIrsaRoles(args: IrsaArgs) {
     policyArn: "arn:aws:iam::aws:policy/AutoScalingFullAccess",
   });
 
+  // AWS Load Balancer Controller role
   const albRole = new aws.iam.Role("irsa-aws-lb-controller", {
     assumeRolePolicy: assumeRolePolicy("aws-load-balancer-controller", "kube-system"),
     tags: buildTags("irsa-aws-lb-controller"),
@@ -50,6 +54,7 @@ export function createIrsaRoles(args: IrsaArgs) {
     policyArn: "arn:aws:iam::aws:policy/ElasticLoadBalancingFullAccess",
   });
 
+  // ExternalDNS role
   const externalDnsRole = new aws.iam.Role("irsa-externaldns", {
     assumeRolePolicy: assumeRolePolicy("external-dns", "kube-system"),
     tags: buildTags("irsa-externaldns"),

@@ -1,5 +1,6 @@
 // index.ts
 import * as aws from "@pulumi/aws";
+import * as pulumi from "@pulumi/pulumi";
 
 import { createVpc } from "./infra/01_vpc";
 import { createIamRoles } from "./infra/02_iam";
@@ -9,6 +10,7 @@ import { createNodeSecurityGroup } from "./infra/05_nodesg";
 import { createEksSecurityGroupBindings } from "./infra/06_sgBindings";
 import { createManagedNodeGroups } from "./infra/07_mng";
 import { createIrsaRoles } from "./infra/08_irsa";
+import { bootstrapArgoCd } from "./infra/09_argocd";
 
 // VPC
 const vpc = createVpc();
@@ -50,6 +52,22 @@ const irsa = createIrsaRoles({
   oidcProviderArn: oidcProvider.arn,
   oidcProviderUrl: oidcProvider.url,
 });
+
+// Argo CD bootstrap
+// const argo = bootstrapArgoCd({
+//   kubeconfig: eksCluster.kubeconfig.apply(JSON.stringify), // convert object to string
+//   useNLB: true,
+// });
+
+pulumi.runtime.registerStackTransformation((args) => {
+  return {
+    props: args.props,
+    opts: pulumi.mergeOptions(args.opts, {
+      ignoreChanges: ["tags.build"],   
+    }),
+  };
+});
+
 
 // Exports
 export const vpcId = vpc.vpcId;
